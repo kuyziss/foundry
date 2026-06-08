@@ -1374,7 +1374,6 @@ Compiling 21 files with [..]
 });
 
 // Test preprocessed contracts with decode internal fns.
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(preprocess_contract_with_decode_internal, |prj, cmd| {
     prj.initialize_default_contracts();
     prj.update_config(|config| {
@@ -1408,7 +1407,8 @@ contract CounterTest is Test {
     "#,
     );
 
-    cmd.args(["test", "--decode-internal", "-vvvv"]).assert_success().stdout_eq(str![[r#"
+    cmd.args(["test", "--decode-internal", "-vvvv", "--no-isolate"]).assert_success().stdout_eq(
+        str![[r#"
 [COMPILING_FILES] with [SOLC_VERSION]
 [SOLC_VERSION] [ELAPSED]
 Compiler run successful!
@@ -1435,7 +1435,8 @@ Suite result: ok. 1 passed; 0 failed; 0 skipped; [ELAPSED]
 
 Ran 1 test suite [ELAPSED]: 1 tests passed, 0 failed, 0 skipped (1 total tests)
 
-"#]]);
+"#]],
+    );
 });
 
 // <https://github.com/foundry-rs/foundry/issues/10492>

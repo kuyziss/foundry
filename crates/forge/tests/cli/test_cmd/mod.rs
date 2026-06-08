@@ -75,12 +75,7 @@ forgetest!(testdata, |_prj, cmd| {
     let nmc_isolate = format!(
         "--nmc=(LastCallGasDefaultTest|MockFunctionTest|WithSeed|StateDiff|GetStorageSlotsTest|RecordAccount|{FLAKY_TESTDATA_CONTRACTS})",
     );
-    let nmc_default = format!("--nmc=({FLAKY_TESTDATA_CONTRACTS})");
-    if cfg!(feature = "isolate-by-default") {
-        args.push(&nmc_isolate);
-    } else {
-        args.push(&nmc_default);
-    }
+    args.push(&nmc_isolate);
 
     let orig_assert = cmd.args(args).assert();
     if orig_assert.get_output().status.success() {
@@ -367,7 +362,6 @@ contract SimpleContractTest is DSTest {
 }
    "#;
 
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest!(can_run_test_with_json_output_verbose, |prj, cmd| {
     prj.insert_ds_test();
     prj.insert_console();
@@ -375,7 +369,7 @@ forgetest!(can_run_test_with_json_output_verbose, |prj, cmd| {
     prj.add_source("Simple.t.sol", SIMPLE_CONTRACT);
 
     // Assert that with verbose output the json output includes the traces
-    cmd.args(["test", "-vvvvv", "--json"])
+    cmd.args(["test", "-vvvvv", "--json", "--no-isolate"])
         .assert_success()
         .stdout_eq(file!["../../fixtures/SimpleContractTestVerbose.json": Json]);
 });
@@ -429,9 +423,9 @@ Ran 1 test suite [ELAPSED]: 1 tests passed, 0 failed, 0 skipped (1 total tests)
 });
 
 // checks that forge test repeatedly produces the same output
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(can_test_repeatedly, |prj, cmd| {
     prj.initialize_default_contracts();
+    prj.update_config(|config| config.isolate = false);
     prj.clear();
 
     cmd.arg("test").assert_success().stdout_eq(str![[r#"
@@ -522,8 +516,8 @@ Ran 1 test suite [ELAPSED]: 1 tests passed, 0 failed, 0 skipped (1 total tests)
 });
 
 // tests that libraries are handled correctly in multiforking mode
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(can_use_libs_in_multi_fork, |prj, cmd| {
+    prj.update_config(|config| config.isolate = false);
     prj.add_source(
         "Contract.sol",
         r"
@@ -1443,7 +1437,6 @@ Ran 1 test suite [ELAPSED]: 1 tests passed, 0 failed, 0 skipped (1 total tests)
 });
 
 // tests internal functions trace
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(internal_functions_trace, |prj, cmd| {
     prj.clear();
 
@@ -1485,7 +1478,8 @@ contract SimpleContractTest is Test {
 }
      "#,
     );
-    cmd.args(["test", "-vvvv", "--decode-internal"]).assert_success().stdout_eq(str![[r#"
+    cmd.args(["test", "-vvvv", "--decode-internal", "--no-isolate"]).assert_success().stdout_eq(
+        str![[r#"
 [COMPILING_FILES] with [SOLC_VERSION]
 [SOLC_VERSION] [ELAPSED]
 Compiler run successful!
@@ -1512,11 +1506,11 @@ Suite result: ok. 1 passed; 0 failed; 0 skipped; [ELAPSED]
 
 Ran 1 test suite [ELAPSED]: 1 tests passed, 0 failed, 0 skipped (1 total tests)
 
-"#]]);
+"#]],
+    );
 });
 
 // tests internal functions trace with memory decoding
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(internal_functions_trace_memory, |prj, cmd| {
     prj.clear();
 
@@ -1546,7 +1540,8 @@ contract SimpleContractTest is Test {
 }
      "#,
     );
-    cmd.args(["test", "-vvvv", "--decode-internal"]).assert_success().stdout_eq(str![[r#"
+    cmd.args(["test", "-vvvv", "--decode-internal", "--no-isolate"]).assert_success().stdout_eq(
+        str![[r#"
 ...
 Traces:
   [..] SimpleContractTest::test()
@@ -1558,7 +1553,8 @@ Traces:
     │   └─ ← [Stop]
     └─ ← [Stop]
 ...
-"#]]);
+"#]],
+    );
 });
 
 // tests that `forge test` with a seed produces deterministic random values for uint and addresses.
@@ -1805,7 +1801,6 @@ contract ATest is Test {
 });
 
 // tests `pauseTracing` and `resumeTracing` functions
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(pause_tracing, |prj, cmd| {
     prj.insert_ds_test();
     prj.insert_vm();
@@ -1851,7 +1846,7 @@ contract PauseTracingTest is DSTest {
 }
      "#,
     );
-    cmd.args(["test", "-vvvvv"]).assert_success().stdout_eq(str![[r#"
+    cmd.args(["test", "-vvvvv", "--no-isolate"]).assert_success().stdout_eq(str![[r#"
 ...
 Traces:
   [7757] PauseTracingTest::setUp()
@@ -3305,12 +3300,18 @@ Ran 1 test for test/ForkTest.t.sol:ForkTest
 });
 
 // Tests that test traces display state changes when running with verbosity.
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(should_show_state_changes, |prj, cmd| {
     prj.initialize_default_contracts();
-    cmd.args(["test", "--mt", "test_Increment", "-vvvvv", "--no-dynamic-test-linking"])
-        .assert_success()
-        .stdout_eq(str![[r#"
+    cmd.args([
+        "test",
+        "--mt",
+        "test_Increment",
+        "-vvvvv",
+        "--no-dynamic-test-linking",
+        "--no-isolate",
+    ])
+    .assert_success()
+    .stdout_eq(str![[r#"
 ...
 Ran 1 test for test/Counter.t.sol:CounterTest
 [PASS] test_Increment() ([GAS])
@@ -3405,7 +3406,6 @@ Ran 1 test suite [ELAPSED]: 1 tests passed, 0 failed, 0 skipped (1 total tests)
     );
 });
 
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(colored_traces, |prj, cmd| {
     prj.initialize_default_contracts();
     cmd.args([
@@ -3416,6 +3416,7 @@ forgetest_init!(colored_traces, |prj, cmd| {
         "always",
         "-vvvvv",
         "--no-dynamic-test-linking",
+        "--no-isolate",
     ])
     .assert_success()
     .stdout_eq(file!["../../fixtures/colored_traces.svg": TermSvg]);
@@ -3423,7 +3424,6 @@ forgetest_init!(colored_traces, |prj, cmd| {
 
 // Tests that traces for successful tests can be suppressed by using `-s` flag.
 // <https://github.com/foundry-rs/foundry/issues/9864>
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(should_only_show_failed_tests_trace, |prj, cmd| {
     prj.initialize_default_contracts();
     prj.add_test(
@@ -3456,9 +3456,17 @@ contract SuppressTracesTest is Test {
     );
 
     // Show traces and logs for failed test only.
-    cmd.args(["test", "--mc", "SuppressTracesTest", "-vvvvv", "-s", "--no-dynamic-test-linking"])
-        .assert_failure()
-        .stdout_eq(str![[r#"
+    cmd.args([
+        "test",
+        "--mc",
+        "SuppressTracesTest",
+        "-vvvvv",
+        "-s",
+        "--no-dynamic-test-linking",
+        "--no-isolate",
+    ])
+    .assert_failure()
+    .stdout_eq(str![[r#"
 [COMPILING_FILES] with [SOLC_VERSION]
 [SOLC_VERSION] [ELAPSED]
 Compiler run successful!
@@ -4281,7 +4289,6 @@ Tip: Run `forge test --rerun` to retry only the 1 failed test
 "#]]);
 });
 
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(detailed_revert_when_calling_non_contract_address, |prj, cmd| {
     prj.initialize_default_contracts();
     prj.add_test(
@@ -4323,7 +4330,14 @@ contract NonContractCallRevertTest is Test {
      "#,
     );
 
-    cmd.args(["test", "--mc", "NonContractCallRevertTest", "-vvvvv", "--no-dynamic-test-linking"])
+    cmd.args([
+        "test",
+        "--mc",
+        "NonContractCallRevertTest",
+        "-vvvvv",
+        "--no-dynamic-test-linking",
+        "--no-isolate",
+    ])
         .assert_failure()
         .stdout_eq(str![[r#"
 [COMPILING_FILES] with [SOLC_VERSION]
@@ -4413,7 +4427,6 @@ Tip: Run `forge test --rerun` to retry only the 3 failed tests
 "#]]);
 });
 
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(detailed_revert_when_delegatecalling_unlinked_library, |prj, cmd| {
     prj.add_test(
         "NonContractDelegateCallRevertTest.t.sol",
@@ -4454,7 +4467,7 @@ contract NonContractDelegateCallRevertTest is Test {
      "#,
     );
 
-    cmd.args(["test", "--mc", "NonContractDelegateCallRevertTest", "-vvvvv"])
+    cmd.args(["test", "--mc", "NonContractDelegateCallRevertTest", "-vvvvv", "--no-isolate"])
         .assert_failure()
         .stdout_eq(str![[r#"
 [COMPILING_FILES] with [SOLC_VERSION]
@@ -4612,9 +4625,9 @@ Ran 1 test suite [ELAPSED]: 1 tests passed, 0 failed, 0 skipped (1 total tests)
 
 // tests proper reverts in fork mode for contracts with non-existent linked libraries.
 // <https://github.com/foundry-rs/foundry/issues/11185>
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(can_fork_test_with_non_existent_linked_library, |prj, cmd| {
     prj.update_config(|config| {
+        config.isolate = false;
         config.libraries =
             vec!["src/Counter.sol:LibCounter:0x530008d2b058137d9c475b1b7d83984f1fcf1dd0".into()];
     });
@@ -4697,9 +4710,9 @@ Tip: Run `forge test --rerun` to retry only the 2 failed tests
 });
 
 // <https://github.com/foundry-rs/foundry/issues/11632>
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(invariant_consistent_output, |prj, cmd| {
     prj.update_config(|config| {
+        config.isolate = false;
         config.fuzz.seed = Some(U256::from(100u32));
         config.invariant.runs = 10;
         config.invariant.depth = 100;

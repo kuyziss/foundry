@@ -551,7 +551,6 @@ Backtrace:
 
 // Test that backtraces only appear at verbosity 5 (-vvvvv).
 // Runs the same failing test at every verbosity level to assert correct output.
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest!(test_backtrace_verbosity_levels, |prj, cmd| {
     prj.insert_ds_test();
     prj.insert_vm();
@@ -594,8 +593,9 @@ contract BacktraceVerbosityTest is DSTest {
     );
 
     // -v (verbosity 1): no traces, no backtrace.
-    cmd.args(["test", "--mc", "BacktraceVerbosityTest", "-v"]).assert_failure().stdout_eq(str![[
-        r#"
+    cmd.args(["test", "--mc", "BacktraceVerbosityTest", "-v", "--no-isolate"])
+        .assert_failure()
+        .stdout_eq(str![[r#"
 [COMPILING_FILES] with [SOLC_VERSION]
 [SOLC_VERSION] [ELAPSED]
 ...
@@ -603,12 +603,11 @@ Ran 1 test for test/BacktraceVerbosity.t.sol:BacktraceVerbosityTest
 [FAIL: Simple revert message] testRevert() ([GAS])
 Suite result: FAILED. 0 passed; 1 failed; 0 skipped; [ELAPSED]
 ...
-"#
-    ]]);
+"#]]);
 
     // -vvv (verbosity 3): traces and backtrace WITHOUT source locations.
     cmd.forge_fuse()
-        .args(["test", "--mc", "BacktraceVerbosityTest", "-vvv"])
+        .args(["test", "--mc", "BacktraceVerbosityTest", "-vvv", "--no-isolate"])
         .assert_failure()
         .stdout_eq(str![[r#"
 No files changed, compilation skipped
@@ -631,7 +630,7 @@ Suite result: FAILED. 0 passed; 1 failed; 0 skipped; [ELAPSED]
 
     // -vvvv (verbosity 4): traces with setup and backtrace WITHOUT source locations.
     cmd.forge_fuse()
-        .args(["test", "--mc", "BacktraceVerbosityTest", "-vvvv"])
+        .args(["test", "--mc", "BacktraceVerbosityTest", "-vvvv", "--no-isolate"])
         .assert_failure()
         .stdout_eq(str![[r#"
 No files changed, compilation skipped
@@ -660,7 +659,7 @@ Suite result: FAILED. 0 passed; 1 failed; 0 skipped; [ELAPSED]
     // -vvvvv (verbosity 5): traces with setup, storage changes, and backtrace WITH source
     // locations.
     cmd.forge_fuse()
-        .args(["test", "--mc", "BacktraceVerbosityTest", "-vvvvv"])
+        .args(["test", "--mc", "BacktraceVerbosityTest", "-vvvvv", "--no-isolate"])
         .assert_failure()
         .stdout_eq(str![[r#"
 No files changed, compilation skipped

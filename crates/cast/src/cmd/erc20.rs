@@ -348,6 +348,7 @@ impl Erc20Subcommand {
         }
     }
 
+    #[allow(clippy::large_stack_frames)]
     pub async fn run_generic<N: Network + RecommendedFillers>(
         self,
         pre_resolved_signer: Option<WalletSigner>,

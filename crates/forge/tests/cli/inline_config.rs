@@ -199,10 +199,11 @@ Tip: Run `forge test --rerun` to retry only the 1 failed test
 "#]]);
 });
 
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(config_inline_isolate, |prj, cmd| {
     use serde::{Deserialize, Deserializer};
     use std::{fs, path::Path};
+
+    prj.update_config(|config| config.isolate = false);
 
     prj.add_test(
         "inline.sol",

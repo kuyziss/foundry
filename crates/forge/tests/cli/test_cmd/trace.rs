@@ -49,7 +49,7 @@ contract ConflictingSignaturesTest is Test {
 "#,
     );
 
-    cmd.args(["test", "-vvvvv"]).assert_success().stdout_eq(str![[r#"
+    cmd.args(["test", "-vvvvv", "--no-isolate"]).assert_success().stdout_eq(str![[r#"
 ...
 Ran 1 test for test/ConflictingSignatures.t.sol:ConflictingSignaturesTest
 [PASS] testTraceWithConflictingSignatures() ([GAS])
@@ -164,7 +164,6 @@ Ran 1 test suite [ELAPSED]: 1 tests passed, 0 failed, 0 skipped (1 total tests)
 "#]]);
 });
 
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(trace_test, |prj, cmd| {
     prj.add_test(
         "Trace.t.sol",
@@ -479,7 +478,6 @@ Ran 1 test suite [ELAPSED]: 2 tests passed, 0 failed, 0 skipped (2 total tests)
 "#]]);
 });
 
-#[cfg(not(feature = "isolate-by-default"))]
 forgetest_init!(trace_test_detph, |prj, cmd| {
     prj.add_test(
         "Trace.t.sol",
@@ -582,7 +580,8 @@ function uintToString(uint256 value) pure returns (string memory) {
 "#,
     );
 
-    cmd.args(["test", "-vvvvv", "--trace-depth", "3"]).assert_success().stdout_eq(str![[r#"
+    cmd.args(["test", "-vvvvv", "--trace-depth", "3", "--no-isolate"]).assert_success().stdout_eq(
+        str![[r#"
 ...
 Ran 2 tests for test/Trace.t.sol:TraceTest
 [PASS] testRecurseCall() ([GAS])
@@ -657,5 +656,6 @@ Suite result: ok. 2 passed; 0 failed; 0 skipped; [ELAPSED]
 
 Ran 1 test suite [ELAPSED]: 2 tests passed, 0 failed, 0 skipped (2 total tests)
 
-"#]]);
+"#]],
+    );
 });
